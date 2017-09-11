@@ -13,13 +13,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        connect_btn = (Button) findViewById(R.id.btn);
-        connect_btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent myIntent = new Intent(MainActivity.this, ChatActivity.class);
-                MainActivity.this.startActivity(myIntent);
-            }
-        });
+//        connect_btn = (Button) findViewById(R.id.btn);
+//        connect_btn.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Intent myIntent = new Intent(MainActivity.this, ChatActivity.class);
+//                MainActivity.this.startActivity(myIntent);
+//            }
+//        });
     }
 }
