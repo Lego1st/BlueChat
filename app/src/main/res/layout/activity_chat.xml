@@ -4,19 +4,25 @@
     android:layout_height="match_parent"
     android:orientation="vertical" >
 
-    <EditText
-        android:id="@+id/editText"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="textPersonName"
-        android:text="Name" />
+        android:layout_height="wrap_content">
+        <EditText
+            android:id="@+id/editText"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:inputType="textPersonName"/>
 
-    <Button
-        android:id="@+id/mess_btn"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="New"/>
+        <Button
+            android:id="@+id/mess_btn"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="5"
+            android:padding="0px"
+            android:text="Send"/>
+    </LinearLayout>
+
     <ListView
         android:id="@+id/listMessage"
         android:layout_width="match_parent"

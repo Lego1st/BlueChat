@@ -41,6 +41,8 @@ public class ChatActivity extends AppCompatActivity {
                 }
                 else {
                     adapter.add(text);
+                    editText.setText("");
+                    listMessages.setSelection(adapter.getCount()-1);
                 }
             }
         });
