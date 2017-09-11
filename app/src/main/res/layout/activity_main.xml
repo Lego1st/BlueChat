@@ -18,11 +18,11 @@
             android:layout_weight="1" />
 
         <Button
-            android:id="@+id/btn"
+            android:id="@+id/btn_scan"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="3"
-            android:text="Connect" />
+            android:text="Scan" />
 
         <Space
             android:layout_width="wrap_content"
@@ -41,8 +41,7 @@
          android:id="@+id/textView"
          android:layout_width="match_parent"
          android:layout_height="wrap_content"
-         android:text="Paired Users"
-         android:layout_weight="1"/>
+         android:text="Paired Users" />
 
     <ListView
         android:id="@+id/paired_devices"
@@ -54,8 +53,7 @@
          android:id="@+id/textView2"
          android:layout_width="match_parent"
          android:layout_height="wrap_content"
-         android:text="Nearby Users"
-         android:layout_weight="1"/>
+         android:text="Nearby Users" />
 
     <ListView
         android:id="@+id/nearby_devices"
