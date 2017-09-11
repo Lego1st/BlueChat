@@ -36,7 +36,7 @@ public class ChatActivity extends AppCompatActivity {
             public void onClick(View v) {
                 String text = editText.getText().toString();
                 if(text.compareTo("") == 0) {
-                    Toast toast = Toast.makeText(getApplicationContext(), "Please input your text!", Toast.LENGTH_LONG);
+                    Toast toast = Toast.makeText(getApplicationContext(), "Please input some text!", Toast.LENGTH_LONG);
                     toast.show();
                 }
                 else {
