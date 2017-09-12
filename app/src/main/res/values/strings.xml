@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">BlueChat</string>
     <string name="none_found">No devices found</string>
+    <string name="none_paired">No devices have been paired</string>
 </resources>
