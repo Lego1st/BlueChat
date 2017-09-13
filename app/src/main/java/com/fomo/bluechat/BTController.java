@@ -5,13 +5,15 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.UUID;
-import java.util.logging.Handler;
 
 /**
  * Created by asus on 9/12/2017.
@@ -29,7 +31,7 @@ public class BTController {
     private AcceptThread accept_thread;
     private ConnectThread connect_thread;
     private ConnectedThread connected_thread;
-    private Context context;
+    private final Handler handler;
 
     // Constants that indicate the current connection state
     public static final int STATE_NONE = 0;       // we're doing nothing
@@ -38,11 +40,10 @@ public class BTController {
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
 
 
-    public BTController(Context context) {
+    public BTController(Context context, Handler handler) {
         adapter = BluetoothAdapter.getDefaultAdapter();
         this.state = STATE_NONE;
-//        this.handler = handler;
-        this.context = context;
+        this.handler = handler;
     }
 
     public synchronized int getState() {
@@ -106,7 +107,13 @@ public class BTController {
 
         connected_thread = new ConnectedThread(socket);
         connected_thread.start();
+
         //msg handler
+        Message msg = handler.obtainMessage(Constants.MESSAGE_DEVICE_NAME);
+        Bundle bundle = new Bundle();
+        bundle.putString(Constants.DEVICE_NAME, device.getName());
+        msg.setData(bundle);
+        handler.sendMessage(msg);
     }
 
     public synchronized void stop() {
@@ -131,12 +138,41 @@ public class BTController {
 
     }
 
+    public void write(byte[] out) {
+        ConnectedThread r;
+        synchronized (this) {
+            if(state != STATE_CONNECTED) return;
+            r = this.connected_thread;
+        }
+        r.write(out);
+    }
+
     private void connectionFailed(BluetoothDevice device) {
         Log.e(TAG, "Unable to connect device " + device.getName());
+
+        Message msg = handler.obtainMessage(Constants.MESSAGE_TOAST);
+        Bundle bundle = new Bundle();
+        bundle.putString(Constants.TOAST, "Unable to connect device " + device.getName());
+        msg.setData(bundle);
+        handler.sendMessage(msg);
+
+        this.state = STATE_NONE;
+
+        BTController.this.start();
     }
 
     private void connectionLost() {
         Log.e(TAG, "Lost connection");
+
+        Message msg = handler.obtainMessage(Constants.MESSAGE_TOAST);
+        Bundle bundle = new Bundle();
+        bundle.putString(Constants.TOAST, "Device connection was lost ");
+        msg.setData(bundle);
+        handler.sendMessage(msg);
+
+        this.state = STATE_NONE;
+
+        BTController.this.start();
     }
 
     private class AcceptThread extends Thread{
@@ -228,12 +264,13 @@ public class BTController {
             try {
                 this.socket.connect();
             } catch (IOException e) {
-                connectionFailed(device);
                 try {
                     this.socket.close();
                 } catch (IOException closeException) {
                     Log.e(TAG, "Could not close the client socket", closeException);
                 }
+                connectionFailed(device);
+                return;
             }
 
             synchronized (BTController.this) {
@@ -290,6 +327,7 @@ public class BTController {
                 try {
                     bytes = connected_input_stream.read(buffer);
                     //send message to chat activity
+                    BTController.this.handler.obtainMessage(Constants.MESSAGE_READ, bytes, -1, buffer).sendToTarget();
 
                 } catch(IOException e) {
                     Log.e(TAG, "disconnected", e);

@@ -2,4 +2,5 @@
     <string name="app_name">BlueChat</string>
     <string name="none_found">No devices found</string>
     <string name="none_paired">No devices have been paired</string>
+    <string name="not_connected">You are not connected to a device</string>
 </resources>

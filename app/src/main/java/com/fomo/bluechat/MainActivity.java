@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,8 +20,7 @@ import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import java.util.List;
+import android.os.Handler;
 import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
@@ -39,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
     private ListView nearby_devices_list;
     private CheckBox is_visible;
     private Button scan_btn;
+    private Button send_hello_btn;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
             Intent enable_intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enable_intent, REQUEST_ENABLE_BT);
         } else if (btController == null) {
-            btController = new BTController(this);
+            btController = new BTController(this, handler);
         }
     }
 
@@ -123,6 +125,14 @@ public class MainActivity extends AppCompatActivity {
 
         filter = new IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
         registerReceiver(discoverable_end_receiver, filter);
+
+        send_hello_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "Send Hello");
+                send_message("Hello World");
+            }
+        });
     }
 
     private void doDiscovery() {
@@ -153,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
         nearby_devices_list = (ListView) findViewById(R.id.nearby_devices);
         is_visible = (CheckBox) findViewById(R.id.is_visible);
         scan_btn = (Button) findViewById(R.id.btn_scan);
+        send_hello_btn = (Button) findViewById(R.id.btn_send_hello);
     }
 
     @Override
@@ -184,6 +195,18 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(MainActivity.this, "connecting to" + address, Toast.LENGTH_SHORT);
         BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
         btController.connect(device);
+    }
+
+    private void send_message(String message) {
+        if(btController.getState() != BTController.STATE_CONNECTED) {
+            Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if(message.length() > 0) {
+            byte[] send = message.getBytes();
+            btController.write(send);
+        }
     }
 
     private final BroadcastReceiver discovering_receiver = new BroadcastReceiver() {
@@ -218,6 +241,28 @@ public class MainActivity extends AppCompatActivity {
             if(scan_mode != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
                 is_visible.setChecked(false);
                 is_visible.setClickable(true);
+            }
+        }
+    };
+
+    private final Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case Constants.MESSAGE_READ:
+                    byte[] readBuf = (byte[]) msg.obj;
+                    String readMessage = new String(readBuf, 0 ,msg.arg1);
+                    Toast.makeText(MainActivity.this, readMessage, Toast.LENGTH_SHORT).show();
+                    break;
+                case Constants.MESSAGE_DEVICE_NAME:
+                    String device_name = msg.getData().getString(Constants.DEVICE_NAME);
+                    Toast.makeText(MainActivity.this,
+                            "Connected to " + device_name, Toast.LENGTH_SHORT).show();
+                    break;
+                case Constants.MESSAGE_TOAST:
+                    Toast.makeText(MainActivity.this, msg.getData().getString(Constants.TOAST),
+                                Toast.LENGTH_SHORT).show();
+                    break;
             }
         }
     };

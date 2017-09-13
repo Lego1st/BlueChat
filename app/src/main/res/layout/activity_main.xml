@@ -60,6 +60,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="40" />
+    <Button
+        android:id="@+id/btn_send_hello"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Send Hello" />
 
 </LinearLayout>
 
