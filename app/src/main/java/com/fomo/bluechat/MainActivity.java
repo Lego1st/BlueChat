@@ -68,9 +68,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
-        if(btController.getState() == BTController.STATE_NONE) {
-            btController.start();
+        if(btController != null) {
+            if (btController.getState() == BTController.STATE_NONE) {
+                btController.start();
+            }
         }
 
         paired_device_adapter = new ArrayAdapter<String>(this, R.layout.device_name);
@@ -150,10 +151,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(REQUEST_ENABLE_BT == requestCode) {
-            if(requestCode == Activity.RESULT_CANCELED) {
+            if(resultCode == Activity.RESULT_OK) {
+                btController = new BTController(this, handler);
+            } else {
                 Toast.makeText(this, "Please enable bluetooth", Toast.LENGTH_SHORT);
-                Intent enable_intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                startActivityForResult(enable_intent, REQUEST_ENABLE_BT);
+                finish();
             }
         }
     }
