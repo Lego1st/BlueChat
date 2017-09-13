@@ -11,11 +11,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.List;
@@ -26,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     private BluetoothAdapter bluetoothAdapter;
+    private BTController btController;
 
     private static final int REQUEST_ENABLE_BT = 1;
 
@@ -55,14 +58,23 @@ public class MainActivity extends AppCompatActivity {
         if(!bluetoothAdapter.isEnabled()) {
             Intent enable_intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enable_intent, REQUEST_ENABLE_BT);
+        } else if (btController == null) {
+            btController = new BTController(this);
         }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+
+        if(btController.getState() == BTController.STATE_NONE) {
+            btController.start();
+        }
+
         paired_device_adapter = new ArrayAdapter<String>(this, R.layout.device_name);
         paired_devices_list.setAdapter(paired_device_adapter);
+        paired_devices_list.setOnItemClickListener(device_list_click_listener);
+
         Set<BluetoothDevice> paired_devices = bluetoothAdapter.getBondedDevices();
         if(paired_devices.size() > 0) {
             for (BluetoothDevice device : paired_devices) {
@@ -75,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
 
         nearby_device_adapter = new ArrayAdapter<String>(this, R.layout.device_name);
         nearby_devices_list.setAdapter(nearby_device_adapter);
+        nearby_devices_list.setOnItemClickListener(device_list_click_listener);
 
         // Register for broadcasts when a device is discovered
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
@@ -147,6 +160,30 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         unregisterReceiver(discovering_receiver);
         unregisterReceiver(discoverable_end_receiver);
+
+        if(btController != null) {
+            btController.stop();
+        }
+    }
+
+    private AdapterView.OnItemClickListener device_list_click_listener = new AdapterView.OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+            bluetoothAdapter.cancelDiscovery();
+
+            String info = ((TextView) view).getText().toString();
+            if(!(getResources().getText(R.string.none_found).toString().equals(info) ||
+                    getResources().getText(R.string.none_paired).toString().equals(info))) {
+                String adress = info.substring(info.length() - 17);
+                connect_device(adress);
+            }
+        }
+    };
+
+    private void connect_device(String address) {
+        Toast.makeText(MainActivity.this, "connecting to" + address, Toast.LENGTH_SHORT);
+        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
+        btController.connect(device);
     }
 
     private final BroadcastReceiver discovering_receiver = new BroadcastReceiver() {
