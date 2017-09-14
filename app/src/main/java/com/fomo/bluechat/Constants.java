@@ -5,6 +5,8 @@ package com.fomo.bluechat;
  */
 
 public interface Constants {
+
+    public static final String EXTRA_KEY = "key";
     // Message types sent from the BluetoothChatService Handler
     public static final int MESSAGE_STATE_CHANGE = 1;
     public static final int MESSAGE_READ = 2;

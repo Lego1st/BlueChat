@@ -130,8 +130,11 @@ public class MainActivity extends AppCompatActivity {
         send_hello_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "Send Hello");
-                send_message("Hello World");
+//                Log.d(TAG, "Send Hello");
+//                send_message("Hello World");
+                Intent myIntent = new Intent(MainActivity.this, ChatActivity.class);
+                myIntent.putExtra(Constants.EXTRA_KEY, "Ops");
+                MainActivity.this.startActivity(myIntent);
             }
         });
     }
