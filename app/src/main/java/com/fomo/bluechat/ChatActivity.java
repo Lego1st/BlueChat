@@ -20,7 +20,7 @@ import java.util.ArrayList;
 public class ChatActivity extends AppCompatActivity {
     private static final String TAG = "ChatActivity";
 
-    private static final boolean INCOME_MESSAGE = true;
+    private static final boolean INCOME_MESSAGE = false;
     private static final boolean CONNECTED = true;
 
     private boolean state;
