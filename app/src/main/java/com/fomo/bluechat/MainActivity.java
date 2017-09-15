@@ -39,7 +39,6 @@ public class MainActivity extends AppCompatActivity {
     private ListView nearby_devices_list;
     private CheckBox is_visible;
     private Button scan_btn;
-    private Button send_hello_btn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,7 +60,8 @@ public class MainActivity extends AppCompatActivity {
             Intent enable_intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enable_intent, REQUEST_ENABLE_BT);
         } else if (btController == null) {
-            btController = new BTController(this, handler);
+            btController = BTController.getInstance();
+            btController.setMain_handler(this.handler);
         }
     }
 
@@ -126,17 +126,6 @@ public class MainActivity extends AppCompatActivity {
 
         filter = new IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
         registerReceiver(discoverable_end_receiver, filter);
-
-        send_hello_btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-//                Log.d(TAG, "Send Hello");
-//                send_message("Hello World");
-                Intent myIntent = new Intent(MainActivity.this, ChatActivity.class);
-                myIntent.putExtra(Constants.EXTRA_KEY, "Ops");
-                MainActivity.this.startActivity(myIntent);
-            }
-        });
     }
 
     private void doDiscovery() {
@@ -155,8 +144,8 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if(REQUEST_ENABLE_BT == requestCode) {
             if(resultCode == Activity.RESULT_OK) {
-                btController = new BTController(this, handler);
-            } else {
+                btController = BTController.getInstance();
+                btController.setMain_handler(this.handler);
                 Toast.makeText(this, "Please enable bluetooth", Toast.LENGTH_SHORT);
                 finish();
             }
@@ -168,7 +157,6 @@ public class MainActivity extends AppCompatActivity {
         nearby_devices_list = (ListView) findViewById(R.id.nearby_devices);
         is_visible = (CheckBox) findViewById(R.id.is_visible);
         scan_btn = (Button) findViewById(R.id.btn_scan);
-        send_hello_btn = (Button) findViewById(R.id.btn_send_hello);
     }
 
     @Override
@@ -190,29 +178,17 @@ public class MainActivity extends AppCompatActivity {
             String info = ((TextView) view).getText().toString();
             if(!(getResources().getText(R.string.none_found).toString().equals(info) ||
                     getResources().getText(R.string.none_paired).toString().equals(info))) {
-                String adress = info.substring(info.length() - 17);
-                connect_device(adress);
+
+                String name = info.substring(0, info.length() - 18);
+                String address = info.substring(info.length() - 17);
+
+                Intent intent = new Intent(MainActivity.this, ChatActivity.class);
+                intent.putExtra(Constants.DEVICE_NAME, name);
+                intent.putExtra(Constants.DEVICE_ADDRESS, address);
+                startActivity(intent);
             }
         }
     };
-
-    private void connect_device(String address) {
-        Toast.makeText(MainActivity.this, "connecting to" + address, Toast.LENGTH_SHORT);
-        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
-        btController.connect(device);
-    }
-
-    private void send_message(String message) {
-        if(btController.getState() != BTController.STATE_CONNECTED) {
-            Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if(message.length() > 0) {
-            byte[] send = message.getBytes();
-            btController.write(send);
-        }
-    }
 
     private final BroadcastReceiver discovering_receiver = new BroadcastReceiver() {
         @Override
@@ -253,21 +229,16 @@ public class MainActivity extends AppCompatActivity {
     private final Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case Constants.MESSAGE_READ:
-                    byte[] readBuf = (byte[]) msg.obj;
-                    String readMessage = new String(readBuf, 0 ,msg.arg1);
-                    Toast.makeText(MainActivity.this, readMessage, Toast.LENGTH_SHORT).show();
-                    break;
-                case Constants.MESSAGE_DEVICE_NAME:
-                    String device_name = msg.getData().getString(Constants.DEVICE_NAME);
-                    Toast.makeText(MainActivity.this,
-                            "Connected to " + device_name, Toast.LENGTH_SHORT).show();
-                    break;
-                case Constants.MESSAGE_TOAST:
-                    Toast.makeText(MainActivity.this, msg.getData().getString(Constants.TOAST),
-                                Toast.LENGTH_SHORT).show();
-                    break;
+            if(msg.what == Constants.MESSAGE_ACCEPT_CONNECT) {
+                Bundle bundle = msg.getData();
+                String device_name = bundle.getString(Constants.DEVICE_NAME);
+                String device_address = bundle.getString(Constants.DEVICE_ADDRESS);
+
+                Intent intent = new Intent(MainActivity.this, ChatActivity.class);
+                intent.putExtra(Constants.DEVICE_NAME, device_name);
+                intent.putExtra(Constants.DEVICE_ADDRESS, device_address);
+
+                startActivity(intent);
             }
         }
     };

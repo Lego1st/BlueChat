@@ -10,9 +10,12 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
+import org.apache.http.conn.scheme.HostNameResolver;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.StringTokenizer;
 import java.util.UUID;
 
 /**
@@ -20,18 +23,22 @@ import java.util.UUID;
  */
 
 public class BTController {
+
+    //singleton
+    private static BTController instance;
+
     private final static String TAG = "BTController";
 
     private static final UUID MY_UUID = UUID.fromString("8ce255c0-200a-11e0-ac64-0800200c9a66");
     private static final String APP_NAME = "BlueChat";
 
     private final BluetoothAdapter adapter;
-//    private final Handler handler;
     private int state;
     private AcceptThread accept_thread;
     private ConnectThread connect_thread;
     private ConnectedThread connected_thread;
-    private final Handler handler;
+    private Handler main_handler;
+    private Handler chat_handler;
 
     // Constants that indicate the current connection state
     public static final int STATE_NONE = 0;       // we're doing nothing
@@ -40,10 +47,25 @@ public class BTController {
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
 
 
-    public BTController(Context context, Handler handler) {
+    private BTController() {
         adapter = BluetoothAdapter.getDefaultAdapter();
         this.state = STATE_NONE;
-        this.handler = handler;
+    }
+
+    public static synchronized BTController getInstance() {
+        if(instance == null) {
+            instance = new BTController();
+        }
+
+        return instance;
+    }
+
+    public synchronized void setMain_handler(Handler main_handler) {
+        this.main_handler = main_handler;
+    }
+
+    public synchronized void setChat_handler(Handler chat_handler){
+        this.chat_handler = chat_handler;
     }
 
     public synchronized int getState() {
@@ -108,12 +130,14 @@ public class BTController {
         connected_thread = new ConnectedThread(socket);
         connected_thread.start();
 
-        //msg handler
-        Message msg = handler.obtainMessage(Constants.MESSAGE_DEVICE_NAME);
-        Bundle bundle = new Bundle();
-        bundle.putString(Constants.DEVICE_NAME, device.getName());
-        msg.setData(bundle);
-        handler.sendMessage(msg);
+        //send message connected to chat activity
+        if(chat_handler != null) {
+            Message msg = chat_handler.obtainMessage(Constants.MESSAGE_CONNECTED);
+            Bundle bundle = new Bundle();
+            bundle.putString(Constants.DEVICE_NAME, device.getName());
+            msg.setData(bundle);
+            chat_handler.sendMessage(msg);
+        }
     }
 
     public synchronized void stop() {
@@ -150,12 +174,11 @@ public class BTController {
     private void connectionFailed(BluetoothDevice device) {
         Log.e(TAG, "Unable to connect device " + device.getName());
 
-        Message msg = handler.obtainMessage(Constants.MESSAGE_TOAST);
-        Bundle bundle = new Bundle();
-        bundle.putString(Constants.TOAST, "Unable to connect device " + device.getName());
-        msg.setData(bundle);
-        handler.sendMessage(msg);
-
+        //send message connect fail to chat activity
+        if(chat_handler != null) {
+            Message msg = chat_handler.obtainMessage(Constants.MESSAGE_CONNECT_FAILED);
+            chat_handler.sendMessage(msg);
+        }
         this.state = STATE_NONE;
 
         BTController.this.start();
@@ -163,12 +186,11 @@ public class BTController {
 
     private void connectionLost() {
         Log.e(TAG, "Lost connection");
-
-        Message msg = handler.obtainMessage(Constants.MESSAGE_TOAST);
-        Bundle bundle = new Bundle();
-        bundle.putString(Constants.TOAST, "Device connection was lost ");
-        msg.setData(bundle);
-        handler.sendMessage(msg);
+        //send message lost connection to chat activity
+        if(chat_handler != null) {
+            Message msg = chat_handler.obtainMessage(Constants.MESSAGE_CONNECT_LOST);
+            chat_handler.sendMessage(msg);
+        }
 
         this.state = STATE_NONE;
 
@@ -211,6 +233,18 @@ public class BTController {
                             case STATE_LISTEN:
                             case STATE_CONNECTING:
                                 //start connected thread
+                                //send message accept connect to main activity
+                                BluetoothDevice device = socket.getRemoteDevice();
+                                String device_name = device.getName();
+                                String device_address = device.getAddress();
+                                if(main_handler != null) {
+                                    Message msg = main_handler.obtainMessage(Constants.MESSAGE_ACCEPT_CONNECT);
+                                    Bundle bundle = new Bundle();
+                                    bundle.putString(Constants.DEVICE_NAME, device_name);
+                                    bundle.putString(Constants.DEVICE_ADDRESS, device_address);
+                                    msg.setData(bundle);
+                                    main_handler.sendMessage(msg);
+                                }
                                 connected(socket, socket.getRemoteDevice());
                                 break;
                             case STATE_NONE:
@@ -327,7 +361,8 @@ public class BTController {
                 try {
                     bytes = connected_input_stream.read(buffer);
                     //send message to chat activity
-                    BTController.this.handler.obtainMessage(Constants.MESSAGE_READ, bytes, -1, buffer).sendToTarget();
+                    BTController.this.chat_handler.obtainMessage(Constants.MESSAGE_READ,
+                            bytes, -1, buffer).sendToTarget();
 
                 } catch(IOException e) {
                     Log.e(TAG, "disconnected", e);
@@ -341,6 +376,8 @@ public class BTController {
             try {
                 connected_output_stream.write(buffer);
                 //send writing message to the chat activity
+                chat_handler.obtainMessage(Constants.MESSAGE_WRITE, -1, -1, buffer)
+                        .sendToTarget();
 
             } catch(IOException e) {
                 Log.e(TAG, "Exception while writting", e);
