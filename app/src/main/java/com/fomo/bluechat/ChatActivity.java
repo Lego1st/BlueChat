@@ -30,6 +30,8 @@ public class ChatActivity extends AppCompatActivity {
     private ListView listMessages;
     private Button mess_btn;
     private EditText edit_text;
+    private ActionBar action_bar;
+
     private String device_name;
     private String device_address;
     
@@ -46,7 +48,7 @@ public class ChatActivity extends AppCompatActivity {
         device_name = intent.getStringExtra(Constants.DEVICE_NAME);
         device_address = intent.getStringExtra(Constants.DEVICE_ADDRESS);
 
-        ActionBar action_bar = this.getSupportActionBar();
+        action_bar = this.getSupportActionBar();
         action_bar.setTitle(device_name);
 
         if(btController.getState() == BTController.STATE_CONNECTED) {
@@ -119,17 +121,18 @@ public class ChatActivity extends AppCompatActivity {
                         finish();
                     } else {
                         state = CONNECTED;
+                        action_bar.setSubtitle("connected");
                     }
                     break;
                 case Constants.MESSAGE_CONNECT_FAILED:
                     Toast.makeText(ChatActivity.this, "Unable to connect device",
                             Toast.LENGTH_SHORT).show();
-                    finish();
+                    ChatActivity.this.finish();
                     break;
                 case Constants.MESSAGE_CONNECT_LOST:
                     Toast.makeText(ChatActivity.this, "Lost connection",
                             Toast.LENGTH_SHORT).show();
-                    finish();
+                    ChatActivity.this.finish();
                     break;
                 case Constants.MESSAGE_READ:
                     byte[] readBuf = (byte[]) msg.obj;

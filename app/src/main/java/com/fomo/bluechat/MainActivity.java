@@ -146,7 +146,8 @@ public class MainActivity extends AppCompatActivity {
             if(resultCode == Activity.RESULT_OK) {
                 btController = BTController.getInstance();
                 btController.setMain_handler(this.handler);
-                Toast.makeText(this, "Please enable bluetooth", Toast.LENGTH_SHORT);
+            } else if(resultCode == Activity.RESULT_CANCELED) {
+                Toast.makeText(this, "Please enable bluetooth", Toast.LENGTH_SHORT).show();
                 finish();
             }
         }
